@@ -1,330 +1,279 @@
 import React, { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import {
-  ArrowRight, Check, ChevronRight, FileText, Gauge, Menu, ShieldCheck,
-  Sparkles, Target, Upload, X
-} from "lucide-react";
+import { ArrowRight, Check, Gauge, Menu, ShieldCheck, Sparkles, Target, X } from "lucide-react";
 import "./styles.css";
 
 type Report = {
   overall: number;
   label: string;
   summary: string;
-  categories: {
-    skills: number;
-    transferable: number;
-    responsibilities: number;
-    impact: number;
-    ats: number;
-  };
+  categories: { skills: number; transferable: number; responsibilities: number; impact: number; ats: number };
   strengths: string[];
   gaps: string[];
   actions: string[];
+  interviewProbability?: number;
+  recruiterFirstImpression?: string;
+  biggestRisk?: string;
+  positioningDiagnosis?: string;
+  careerDNA?: { capability: string; confidence: number; evidence: string; relevance: string }[];
+  hiddenTransferableSkills?: { skill: string; evidence: string; application: string }[];
+  atsAnalysis?: {
+    score: number;
+    matchedKeywords: string[];
+    missingKeywords: { keyword: string; importance: string; safeToAdd: boolean; guidance: string }[];
+  };
+  recruiterObjections?: { objection: string; severity: string; counterargument: string; requiredEvidence: string }[];
+  resumeRewrites?: { section: string; original: string; rewrite: string; reason: string }[];
+  thirtyMinutePlan?: { priority: number; minutes: number; action: string; expectedImpact: string }[];
+  careerPivotRoles?: { role: string; fitScore: number; rationale: string; gap: string }[];
+  scoreAfterChanges?: number;
+  truthCheck?: string[];
 };
 
-const demoReport: Report = {
-  overall: 84,
-  label: "Strong potential",
-  summary:
-    "Your experience demonstrates most of the role’s core requirements. The biggest opportunity is making your evidence easier for recruiters and screening systems to find.",
-  categories: {
-    skills: 88,
-    transferable: 93,
-    responsibilities: 81,
-    impact: 68,
-    ats: 82,
+const sample: Report = {
+  overall: 91,
+  label: "Exceptional Match",
+  summary: "Your experience is stronger than your titles initially suggest. The main opportunity is positioning your operational leadership and measurable impact more clearly.",
+  interviewProbability: 72,
+  recruiterFirstImpression: "This candidate has credible operational and program leadership experience. The strongest evidence is cross-functional ownership, process improvement, reporting, and complex regulated work.",
+  biggestRisk: "A recruiter may categorize you too quickly based on previous titles and overlook the broader operational scope of your work.",
+  positioningDiagnosis: "Your experience is not the primary problem. The resume needs to translate your responsibilities into the language used by the target role.",
+  categories: { skills: 89, transferable: 96, responsibilities: 88, impact: 80, ats: 84 },
+  strengths: ["Strong cross-functional ownership", "Documented process-improvement experience", "Experience managing complex and regulated work"],
+  gaps: ["Target-role terminology is not prominent enough", "Some accomplishments need clearer metrics", "The summary is not fully aligned with the target role"],
+  actions: ["Rewrite the headline and summary", "Move the most relevant accomplishment higher", "Add one verified impact metric"],
+  careerDNA: [
+    { capability: "Operations Leadership", confidence: 96, evidence: "Owned complex programs and cross-functional workflows.", relevance: "Supports operations and program-management roles." },
+    { capability: "Process Improvement", confidence: 94, evidence: "Built repeatable procedures, tools, and documentation.", relevance: "Shows an ability to improve efficiency and consistency." },
+    { capability: "Cross-functional Influence", confidence: 95, evidence: "Partnered with leaders, external stakeholders, and internal teams.", relevance: "Shows influence without relying on authority." }
+  ],
+  hiddenTransferableSkills: [
+    { skill: "Program Management", evidence: "Coordinated stakeholders, deadlines, documentation, and outcomes.", application: "Position this as end-to-end program ownership rather than administrative support." }
+  ],
+  atsAnalysis: {
+    score: 84,
+    matchedKeywords: ["cross-functional", "process improvement", "reporting", "operations"],
+    missingKeywords: [
+      { keyword: "automation", importance: "High", safeToAdd: true, guidance: "Use only where your real work involved workflow or process automation." },
+      { keyword: "LLM pipelines", importance: "High", safeToAdd: false, guidance: "Do not claim this without direct experience." }
+    ]
   },
-  strengths: [
-    "Strong evidence of cross-functional ownership and regulated-process work",
-    "Transferable leadership experience is more relevant than your past titles suggest",
-    "Your systems and process-improvement background align with the role",
+  resumeRewrites: [
+    { section: "Headline", original: "HR Operations Manager", rewrite: "Operations and HR Program Manager", reason: "Reflects broader operational scope without misrepresenting the background." }
   ],
-  gaps: [
-    "Your strongest measurable outcomes are buried in older experience",
-    "The job emphasizes analytics, but your resume does not quantify reporting work",
-    "Two required phrases appear in the posting but not in your resume",
+  thirtyMinutePlan: [
+    { priority: 1, minutes: 10, action: "Rewrite the headline and summary.", expectedImpact: "Clarifies target-role alignment immediately." },
+    { priority: 2, minutes: 10, action: "Move the strongest accomplishment higher.", expectedImpact: "Prevents recruiters from overlooking your best evidence." },
+    { priority: 3, minutes: 10, action: "Add one verified metric.", expectedImpact: "Improves credibility and impact." }
   ],
-  actions: [
-    "Move your most relevant project or operational result into the top third",
-    "Add one metric that shows scale, speed, volume, cost, or accuracy",
-    "Rewrite the summary around the target role rather than your current title",
+  careerPivotRoles: [
+    { role: "Operations Manager", fitScore: 93, rationale: "Your background shows process ownership and stakeholder leadership.", gap: "Make operational results more prominent." },
+    { role: "Program Manager", fitScore: 92, rationale: "You have relevant complex-program coordination experience.", gap: "Show more end-to-end outcomes." }
   ],
+  scoreAfterChanges: 95,
+  truthCheck: ["Do not claim direct LLM pipeline experience without evidence.", "Do not add tools you have not used."]
 };
-
-const navItems = ["How it works", "Job Fit", "Pricing", "Resources"];
 
 function Logo() {
-  return (
-    <a className="logo" href="#top" aria-label="Threadline home">
-      <svg viewBox="0 0 42 42" aria-hidden="true">
-        <path d="M9 10h24M21 10v12c0 8-8 7-8 13 0 4 4 6 8 6s8-2 8-6c0-6-8-5-8-13" />
-      </svg>
-      <span>Threadline</span>
-    </a>
-  );
+  return <a className="logo" href="#top"><span>T</span>Threadline</a>;
+}
+
+function Pill({ children, tone = "neutral" }: { children: React.ReactNode; tone?: string }) {
+  return <span className={`pill ${tone}`}>{children}</span>;
 }
 
 function ScoreBar({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="score-row">
-      <div><span>{label}</span><strong>{value}%</strong></div>
-      <div className="score-track"><span style={{ width: `${value}%` }} /></div>
-    </div>
-  );
+  const score = Math.max(0, Math.min(100, value || 0));
+  return <div className="score-row"><div><span>{label}</span><strong>{score}%</strong></div><div className="track"><i style={{ width: `${score}%` }} /></div></div>;
+}
+
+function Score({ value }: { value: number }) {
+  const score = Math.max(0, Math.min(100, value || 0));
+  return <div className="score" style={{ "--score": `${score * 3.6}deg` } as React.CSSProperties}><div><strong>{score}</strong><span>/100</span></div></div>;
+}
+
+function Heading({ eyebrow, title, text }: { eyebrow: string; title: string; text?: string }) {
+  return <div className="heading"><div className="eyebrow">{eyebrow}</div><h2>{title}</h2>{text && <p>{text}</p>}</div>;
 }
 
 function App() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [resumeText, setResumeText] = useState("");
-  const [jobText, setJobText] = useState("");
-  const [fileName, setFileName] = useState("");
+  const [mobile, setMobile] = useState(false);
+  const [resume, setResume] = useState("");
+  const [job, setJob] = useState("");
   const [report, setReport] = useState<Report | null>(null);
+  const [showSample, setShowSample] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
-  const canAnalyze = useMemo(
-    () => jobText.trim().length > 100 && (resumeText.trim().length > 100 || !!fileName),
-    [jobText, resumeText, fileName]
-  );
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const canAnalyze = useMemo(() => resume.trim().length > 100 && job.trim().length > 100, [resume, job]);
+  const active = showSample ? sample : report;
 
   async function analyze() {
+    if (!canAnalyze || loading) return;
     setLoading(true);
+    setError("");
+    setReport(null);
+    setShowSample(false);
+
     try {
-      const response = await fetch("/api/job-fit", {
+      const response = await fetch("/.netlify/functions/job-fit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resume: resumeText, jobDescription: jobText }),
+        body: JSON.stringify({ resume, jobDescription: job })
       });
-      if (!response.ok) throw new Error("Analysis unavailable");
       const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Analysis unavailable.");
       setReport(data);
-    } catch {
-      setReport(demoReport);
+      setTimeout(() => document.querySelector("#report")?.scrollIntoView({ behavior: "smooth" }), 100);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Threadline could not complete the analysis.");
     } finally {
       setLoading(false);
-      setTimeout(() => document.querySelector("#report")?.scrollIntoView({ behavior: "smooth" }), 50);
     }
   }
 
-  async function checkout(plan: string) {
-    setCheckoutLoading(plan);
+  async function checkout() {
+    setCheckoutLoading(true);
     try {
-      const response = await fetch("/api/create-checkout", {
+      const response = await fetch("/.netlify/functions/create-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan: "pro" })
       });
       const data = await response.json();
-      if (!response.ok || !data.url) throw new Error(data.error || "Checkout unavailable");
+      if (!response.ok || !data.url) throw new Error(data?.error || "Checkout unavailable.");
       window.location.href = data.url;
-    } catch (error) {
-      alert(error instanceof Error ? error.message : "Checkout is not configured yet.");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Checkout is not configured yet.");
     } finally {
-      setCheckoutLoading(null);
+      setCheckoutLoading(false);
     }
   }
 
-  return (
-    <>
-      <header className="site-header" id="top">
-        <Logo />
-        <nav className={mobileOpen ? "open" : ""}>
-          {navItems.map((item) => (
-            <a key={item} href={`#${item.toLowerCase().replaceAll(" ", "-")}`} onClick={() => setMobileOpen(false)}>{item}</a>
-          ))}
-          <a className="nav-cta" href="#job-fit">Check my fit</a>
-        </nav>
-        <button className="menu-btn" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Toggle navigation">
-          {mobileOpen ? <X /> : <Menu />}
-        </button>
-      </header>
+  function openSample() {
+    setShowSample(true);
+    setReport(null);
+    setTimeout(() => document.querySelector("#sample-report")?.scrollIntoView({ behavior: "smooth" }), 50);
+  }
 
-      <main>
-        <section className="hero">
-          <div className="hero-copy">
-            <div className="eyebrow"><Sparkles size={15} /> Career intelligence for real people</div>
-            <h1>Your career isn’t random.</h1>
-            <h1 className="accent-line">Find the thread.</h1>
-            <p>
-              Threadline looks beyond job titles and keyword counts to uncover the experience,
-              evidence, and transferable strengths that prove you fit the job.
-            </p>
-            <div className="hero-actions">
-              <a className="button primary" href="#job-fit">Check my job fit <ArrowRight size={18} /></a>
-              <a className="button ghost" href="#how-it-works">See how it works</a>
+  return <>
+    <header id="top">
+      <Logo />
+      <nav className={mobile ? "open" : ""}>
+        <a href="#how-it-works" onClick={() => setMobile(false)}>How it works</a>
+        <a href="#analyze" onClick={() => setMobile(false)}>Analyze</a>
+        <a href="#pricing" onClick={() => setMobile(false)}>Pricing</a>
+        <a className="nav-cta" href="#analyze" onClick={() => setMobile(false)}>Analyze my resume</a>
+      </nav>
+      <button className="menu" onClick={() => setMobile(!mobile)}>{mobile ? <X /> : <Menu />}</button>
+    </header>
+
+    <main>
+      <section className="hero">
+        <div>
+          <Pill tone="accent">Recruiter-grade career analysis</Pill>
+          <h1>See what recruiters <em>see.</em></h1>
+          <p>Threadline finds the experience your resume is underselling and shows you exactly how to position it for the job you want.</p>
+          <div className="actions">
+            <a className="button primary" href="#analyze">Analyze my resume free <ArrowRight size={18} /></a>
+            <button className="button ghost" onClick={openSample}>View sample report</button>
+          </div>
+          <div className="trust">
+            <span><Check size={17} /> First analysis free</span>
+            <span><ShieldCheck size={17} /> No credit card required</span>
+            <span><Check size={17} /> Truthful recommendations</span>
+          </div>
+        </div>
+
+        <div className="preview">
+          <div className="preview-top"><span>Recruiter Analysis</span><Pill tone="success">Sample</Pill></div>
+          <div className="preview-score"><Score value={91} /><div><Pill tone="success">Exceptional Match</Pill><h3>Your experience is stronger than your title suggests.</h3></div></div>
+          <div className="preview-block"><small>Recruiter's first impression</small><p>Strong operational ownership, cross-functional leadership, and process-improvement experience.</p></div>
+          <div className="preview-block"><small>Career DNA</small><ScoreBar label="Operations leadership" value={96} /><ScoreBar label="Process improvement" value={94} /></div>
+        </div>
+      </section>
+
+      <section className="built-for"><span>Built for</span><strong>Career changers</strong><strong>Returning professionals</strong><strong>Nonlinear careers</strong><strong>People who are underselling themselves</strong></section>
+
+      <section className="section" id="how-it-works">
+        <Heading eyebrow="Why Threadline" title="More than a keyword score" text="Most tools tell you what is missing. Threadline explains what recruiters may be overlooking and what to do next." />
+        <div className="features">
+          <article><span>01</span><Target /><h3>Recruiter thinking</h3><p>See how a hiring manager is likely to interpret your resume during the first review.</p></article>
+          <article><span>02</span><Sparkles /><h3>Career translation</h3><p>Find transferable experience hidden behind titles, industries, career changes, and nonlinear paths.</p></article>
+          <article><span>03</span><ShieldCheck /><h3>Truth-first improvements</h3><p>Strengthen what is real. Threadline never tells you to fabricate experience.</p></article>
+        </div>
+      </section>
+
+      <section className="section translation">
+        <Heading eyebrow="Career translation" title="Your experience may already fit" text="The difference is often how clearly your resume connects your experience to the target role." />
+        <div className="translation-grid">
+          <article><small>Before</small><h3>HR Operations Manager</h3><p>Managed employee programs, documentation, reporting, and compliance.</p></article>
+          <ArrowRight />
+          <article className="after"><small>After Threadline</small><h3>Operations and HR Program Manager</h3><p>Led complex workforce programs, cross-functional operations, reporting, compliance, and process improvements.</p></article>
+        </div>
+      </section>
+
+      <section className="section analyze" id="analyze">
+        <Heading eyebrow="Free analysis" title="Compare your resume to a job" text="Paste both documents below. Threadline will analyze your real experience without inventing qualifications." />
+        <div className="analyzer">
+          <label><span><strong>1. Your resume</strong><small>{resume.length.toLocaleString()} characters</small></span><textarea value={resume} onChange={e => setResume(e.target.value)} placeholder="Paste your complete resume here..." /></label>
+          <label><span><strong>2. Target job description</strong><small>{job.length.toLocaleString()} characters</small></span><textarea value={job} onChange={e => setJob(e.target.value)} placeholder="Paste the full job description here..." /></label>
+          {error && <div className="error">{error}</div>}
+          <div className="analyzer-footer"><p>Review every recommendation before using it in an application.</p><button className="button primary" disabled={!canAnalyze || loading} onClick={analyze}>{loading ? "Analyzing your career..." : "Run recruiter analysis"} <Gauge size={18} /></button></div>
+        </div>
+      </section>
+
+      {loading && <section className="section"><div className="loading"><i /><h2>Threadline is reading your career.</h2><p>Comparing responsibilities, evidence, keywords, and likely recruiter objections.</p></div></section>}
+
+      {active && !loading && <section className="report" id={showSample ? "sample-report" : "report"}>
+        <Heading eyebrow={showSample ? "Sample report" : "Analysis complete"} title="Here is what a recruiter may see." />
+        <div className="overview"><Score value={active.overall} /><div><div className="eyebrow">{active.label}</div><h2>{active.summary}</h2><div className="probability"><span>Estimated interview probability</span><strong>{active.interviewProbability ?? 0}%</strong><div><i style={{ width: `${active.interviewProbability ?? 0}%` }} /></div><small>Guidance only. Hiring decisions depend on competition and factors outside the resume.</small></div></div></div>
+
+        <div className="report-layout">
+          <div className="report-main">
+            {active.recruiterFirstImpression && <article className="card featured-card"><div className="card-title"><span>15s</span><div><div className="eyebrow">Recruiter's first impression</div><h3>What stands out during the first review</h3></div></div><blockquote>{active.recruiterFirstImpression}</blockquote>{active.positioningDiagnosis && <aside><strong>Positioning diagnosis</strong><p>{active.positioningDiagnosis}</p></aside>}</article>}
+
+            <div className="two">
+              <article className="card"><h3>Why you fit</h3><ul>{active.strengths.map(x => <li key={x}><Check size={17} />{x}</li>)}</ul></article>
+              <article className="card"><h3>What weakens the application</h3><ul>{active.gaps.map(x => <li key={x}><ArrowRight size={17} />{x}</li>)}</ul></article>
             </div>
-            <div className="trust-row">
-              <span><ShieldCheck size={17} /> Private by design</span>
-              <span><Check size={17} /> Free first score</span>
-              <span><Check size={17} /> No keyword stuffing</span>
-            </div>
+
+            {!!active.careerDNA?.length && <article className="card"><div className="card-title"><span>DNA</span><div><div className="eyebrow">Career DNA</div><h3>The capabilities that travel with you</h3></div></div><div className="dna">{active.careerDNA.map(x => <div key={x.capability}><header><h4>{x.capability}</h4><strong>{x.confidence}%</strong></header><div className="track"><i style={{ width: `${x.confidence}%` }} /></div><p>{x.evidence}</p><small>{x.relevance}</small></div>)}</div></article>}
+
+            {active.biggestRisk && <article className="risk"><Pill tone="warning">Biggest interview risk</Pill><h3>{active.biggestRisk}</h3><p>This may be a true gap or a positioning problem. Threadline separates the two.</p></article>}
+
+            {!!active.hiddenTransferableSkills?.length && <article className="card"><div className="card-title"><span>↔</span><div><div className="eyebrow">Hidden transferable skills</div><h3>Experience your titles may be hiding</h3></div></div><div className="stack">{active.hiddenTransferableSkills.map(x => <div key={x.skill}><h4>{x.skill}</h4><p>{x.evidence}</p><aside><strong>How to position it</strong><span>{x.application}</span></aside></div>)}</div></article>}
+
+            {active.atsAnalysis && <article className="card"><div className="card-title"><span>ATS</span><div><div className="eyebrow">ATS intelligence</div><h3>Keywords and screening alignment</h3></div></div><div className="ats"><strong>{active.atsAnalysis.score}%</strong><span>ATS alignment</span></div><h4>Matched language</h4><div className="pills">{active.atsAnalysis.matchedKeywords.map(x => <Pill tone="success" key={x}>{x}</Pill>)}</div><h4>Important missing language</h4><div className="keywords">{active.atsAnalysis.missingKeywords.map(x => <div key={x.keyword}><section><strong>{x.keyword}</strong><span>{x.guidance}</span></section><aside><Pill tone={x.importance === "High" ? "warning" : "neutral"}>{x.importance}</Pill><Pill tone={x.safeToAdd ? "success" : "danger"}>{x.safeToAdd ? "Supported" : "Do not claim"}</Pill></aside></div>)}</div></article>}
+
+            {!!active.resumeRewrites?.length && <article className="card"><div className="card-title"><span>Aa</span><div><div className="eyebrow">Exact resume changes</div><h3>Translate your experience without inventing it</h3></div></div><div className="rewrites">{active.resumeRewrites.map((x, i) => <div key={`${x.section}-${i}`}><small>{x.section}</small><div><section><strong>Current</strong><p>{x.original || "No current wording identified."}</p></section><ArrowRight /><section className="recommended"><strong>Recommended</strong><p>{x.rewrite}</p></section></div><footer>{x.reason}</footer></div>)}</div></article>}
+
+            <article className="card"><div className="card-title"><span>30</span><div><div className="eyebrow">Prioritized action plan</div><h3>Improve this application in 30 minutes</h3></div></div>{active.thirtyMinutePlan?.length ? <div className="plan">{active.thirtyMinutePlan.map((x, i) => <div key={`${x.action}-${i}`}><b>{i + 1}</b><section><header><strong>{x.action}</strong><Pill>{x.minutes} min</Pill></header><p>{x.expectedImpact}</p></section></div>)}</div> : <ul>{active.actions.map(x => <li key={x}><Sparkles size={17} />{x}</li>)}</ul>}<div className="score-change"><div><span>Current score</span><strong>{active.overall}</strong></div><ArrowRight /><div><span>Estimated after changes</span><strong>{active.scoreAfterChanges ?? active.overall}</strong></div></div></article>
+
+            {!!active.careerPivotRoles?.length && <article className="card"><div className="card-title"><span>+</span><div><div className="eyebrow">Career pivot opportunities</div><h3>Adjacent roles supported by your experience</h3></div></div><div className="pivots">{active.careerPivotRoles.map(x => <div key={x.role}><header><h4>{x.role}</h4><strong>{x.fitScore}% fit</strong></header><p>{x.rationale}</p><small><strong>Primary gap:</strong> {x.gap}</small></div>)}</div></article>}
+
+            {!!active.truthCheck?.length && <article className="card truth"><div className="card-title"><span>✓</span><div><div className="eyebrow">Truth check</div><h3>Claims that require real evidence</h3></div></div><ul>{active.truthCheck.map(x => <li key={x}>{x}</li>)}</ul></article>}
           </div>
 
-          <div className="thread-card">
-            <div className="thread-card-label">THE CAREER THREAD</div>
-            <div className="timeline">
-              <span>Customer Support</span>
-              <i />
-              <span>Project Coordination</span>
-              <i />
-              <span>People Operations</span>
-              <i />
-              <span className="active-role">Operations Leadership</span>
-            </div>
-            <div className="thread-summary">
-              <small>THREADLINE FOUND</small>
-              <strong>Process builder who turns complex work into reliable, people-centered systems.</strong>
-            </div>
-          </div>
-        </section>
+          <aside className="sidebar">
+            <article className="card"><h3>Score breakdown</h3><ScoreBar label="Skills and systems" value={active.categories.skills} /><ScoreBar label="Transferable experience" value={active.categories.transferable} /><ScoreBar label="Responsibilities" value={active.categories.responsibilities} /><ScoreBar label="Evidence and impact" value={active.categories.impact} /><ScoreBar label="ATS alignment" value={active.categories.ats} /></article>
+            <article className="pro"><div className="eyebrow">Threadline Pro</div><h3>Turn analysis into finished applications.</h3><p>Tailored resumes, cover letters, interview preparation, and unlimited job comparisons.</p><button className="button primary full" onClick={checkout}>{checkoutLoading ? "Opening checkout..." : "Choose Pro"}</button></article>
+          </aside>
+        </div>
+      </section>}
 
-        <section className="logos-strip">
-          <span>Built for</span>
-          <strong>Career changers</strong>
-          <strong>Returning professionals</strong>
-          <strong>Former business owners</strong>
-          <strong>Multidisciplinary candidates</strong>
-        </section>
+      <section className="section pricing" id="pricing">
+        <Heading eyebrow="Simple pricing" title="Use what you need during your job search" text="Start free. Upgrade when you are ready to tailor more applications." />
+        <div className="pricing-grid">
+          <article><span>Free</span><h3>$0</h3><p>Understand your fit before you apply.</p><ul><li><Check />One recruiter analysis</li><li><Check />Job Fit Score</li><li><Check />Top strengths and gaps</li><li><Check />Prioritized improvements</li></ul><a className="button ghost full" href="#analyze">Start free</a></article>
+          <article className="featured"><Pill tone="accent">Most popular</Pill><span>Pro Job Search</span><h3>$49 <small>/ 30 days</small></h3><p>Everything needed for an active search.</p><ul><li><Check />Unlimited analyses</li><li><Check />Career DNA profile</li><li><Check />Resume tailoring</li><li><Check />Cover letters</li><li><Check />Interview preparation</li></ul><button className="button primary full" onClick={checkout}>{checkoutLoading ? "Opening checkout..." : "Choose Pro"}</button></article>
+        </div>
+      </section>
+    </main>
 
-        <section className="job-fit-section" id="job-fit">
-          <div className="section-heading centered">
-            <div className="eyebrow"><Target size={15} /> Free Job Fit Score</div>
-            <h2>See how well your experience really fits.</h2>
-            <p>Paste your resume and a job description. Threadline identifies what matches, what is missing, and what to change first.</p>
-          </div>
-
-          <div className="analyzer-card">
-            <div className="input-panel">
-              <label>
-                <span>1. Add your resume</span>
-                <textarea
-                  value={resumeText}
-                  onChange={(e) => setResumeText(e.target.value)}
-                  placeholder="Paste your resume text here..."
-                />
-              </label>
-              <div className="upload-divider"><span>or</span></div>
-              <label className="upload-box">
-                <Upload size={22} />
-                <strong>{fileName || "Choose a resume file"}</strong>
-                <small>PDF or DOCX upload UI included; text extraction is a Sprint 2 connection.</small>
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx,.txt"
-                  onChange={(e) => setFileName(e.target.files?.[0]?.name || "")}
-                />
-              </label>
-            </div>
-            <div className="input-panel">
-              <label>
-                <span>2. Paste the job description</span>
-                <textarea
-                  value={jobText}
-                  onChange={(e) => setJobText(e.target.value)}
-                  placeholder="Paste the full job description here..."
-                />
-              </label>
-              <button className="button primary full" disabled={!canAnalyze || loading} onClick={analyze}>
-                {loading ? "Finding your thread..." : "Analyze my fit"} <Gauge size={18} />
-              </button>
-              <p className="fine-print">Your content is used only to create this analysis and is not displayed publicly.</p>
-            </div>
-          </div>
-        </section>
-
-        {report && (
-          <section className="report-section" id="report">
-            <div className="report-shell">
-              <div className="report-top">
-                <div className="score-circle"><strong>{report.overall}</strong><span>/100</span></div>
-                <div>
-                  <div className="eyebrow">Your Job Fit Score</div>
-                  <h2>{report.label}</h2>
-                  <p>{report.summary}</p>
-                </div>
-              </div>
-
-              <div className="report-grid">
-                <div className="breakdown-card">
-                  <h3>Score breakdown</h3>
-                  <ScoreBar label="Skills and systems" value={report.categories.skills} />
-                  <ScoreBar label="Transferable experience" value={report.categories.transferable} />
-                  <ScoreBar label="Responsibilities" value={report.categories.responsibilities} />
-                  <ScoreBar label="Evidence and impact" value={report.categories.impact} />
-                  <ScoreBar label="ATS alignment" value={report.categories.ats} />
-                </div>
-                <div className="insight-card">
-                  <h3>Why you fit</h3>
-                  <ul>{report.strengths.map((x) => <li key={x}><Check size={17} />{x}</li>)}</ul>
-                </div>
-                <div className="insight-card">
-                  <h3>What is weakening your application</h3>
-                  <ul>{report.gaps.map((x) => <li key={x}><ChevronRight size={17} />{x}</li>)}</ul>
-                </div>
-                <div className="insight-card premium-preview">
-                  <div>
-                    <span className="premium-tag">FULL REPORT</span>
-                    <h3>Your prioritized action plan</h3>
-                    <ul>{report.actions.map((x) => <li key={x}><Sparkles size={17} />{x}</li>)}</ul>
-                  </div>
-                  <button className="button primary full" onClick={() => checkout("report")}>
-                    Unlock for $9 <ArrowRight size={18} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        <section className="process-section" id="how-it-works">
-          <div className="section-heading">
-            <div className="eyebrow">Why Threadline is different</div>
-            <h2>Other tools scan your resume. Threadline understands your career.</h2>
-          </div>
-          <div className="feature-grid">
-            <article><FileText /><h3>Career Evidence</h3><p>Find relevant accomplishments across your whole history—not just what made it into your current resume.</p></article>
-            <article><Target /><h3>Transferable fit</h3><p>Translate experience across titles, industries, contract work, caregiving, entrepreneurship, and career changes.</p></article>
-            <article><Sparkles /><h3>Honest recommendations</h3><p>Strengthen what is true. Threadline never tells users to claim skills or experience they do not have.</p></article>
-          </div>
-        </section>
-
-        <section className="pricing-section" id="pricing">
-          <div className="section-heading centered">
-            <div className="eyebrow">Simple launch pricing</div>
-            <h2>Use what you need during your job search.</h2>
-          </div>
-          <div className="pricing-grid">
-            <article>
-              <span className="plan-name">Starter</span><h3>$0</h3><p>Try Threadline before paying.</p>
-              <ul><li><Check />One Job Fit Score</li><li><Check />Top strengths and gaps</li><li><Check />Basic resume builder</li></ul>
-              <a className="button ghost full" href="#job-fit">Start free</a>
-            </article>
-            <article className="featured">
-              <span className="popular">MOST POPULAR</span><span className="plan-name">Pro Job Search</span><h3>$49 <small>/ 30 days</small></h3><p>Everything needed for an active search.</p>
-              <ul><li><Check />Unlimited Job Fit reports</li><li><Check />Resume tailoring</li><li><Check />Cover letters and interview prep</li><li><Check />Career Evidence profile</li></ul>
-              <button className="button primary full" onClick={() => checkout("pro")}>{checkoutLoading === "pro" ? "Opening checkout..." : "Choose Pro"}</button>
-            </article>
-            <article>
-              <span className="plan-name">Career Story</span><h3>$99</h3><p>Position a complex or nonlinear background.</p>
-              <ul><li><Check />Everything in Pro</li><li><Check />Career narrative</li><li><Check />Tell-me-about-yourself answer</li><li><Check />STAR story bank</li></ul>
-              <button className="button ghost full" onClick={() => checkout("career_story")}>{checkoutLoading === "career_story" ? "Opening checkout..." : "Build my story"}</button>
-            </article>
-          </div>
-          <button className="lifetime-link" onClick={() => checkout("lifetime")}>Prefer lifetime access? Founding-member price: $149 →</button>
-        </section>
-
-        <section className="privacy-section">
-          <ShieldCheck size={32} />
-          <div><h2>Privacy is a product requirement.</h2><p>Threadline is built as a brand-led company. No founder biography, home address, personal phone number, or personal identity is required on the public site.</p></div>
-        </section>
-      </main>
-
-      <footer>
-        <div><Logo /><p>Make your experience make sense.</p></div>
-        <div className="footer-links"><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="mailto:support@threadlineresume.com">Support</a></div>
-        <small>© {new Date().getFullYear()} Threadline. Scores are guidance, not a guarantee of employment.</small>
-      </footer>
-    </>
-  );
+    <footer><div><Logo /><p>Make your experience make sense.</p></div><div className="footer-links"><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="mailto:support@threadlineresume.com">Support</a></div><small>© {new Date().getFullYear()} Threadline. Scores are guidance, not a guarantee of employment.</small></footer>
+  </>;
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(<React.StrictMode><App /></React.StrictMode>);
