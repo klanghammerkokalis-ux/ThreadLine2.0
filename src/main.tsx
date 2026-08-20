@@ -133,22 +133,9 @@ function App() {
     }
   }
 
-  async function checkout() {
+  function checkout() {
     setCheckoutLoading(true);
-    try {
-      const response = await fetch("/.netlify/functions/create-checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: "pro" })
-      });
-      const data = await response.json();
-      if (!response.ok || !data.url) throw new Error(data?.error || "Checkout unavailable.");
-      window.location.href = data.url;
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Checkout is not configured yet.");
-    } finally {
-      setCheckoutLoading(false);
-    }
+    window.location.href = "https://buy.stripe.com/28E14fdwh7g19PF8FZ08g0a";
   }
 
   function openSample() {
@@ -258,16 +245,16 @@ function App() {
 
           <aside className="sidebar">
             <article className="card"><h3>Score breakdown</h3><ScoreBar label="Skills and systems" value={active.categories.skills} /><ScoreBar label="Transferable experience" value={active.categories.transferable} /><ScoreBar label="Responsibilities" value={active.categories.responsibilities} /><ScoreBar label="Evidence and impact" value={active.categories.impact} /><ScoreBar label="ATS alignment" value={active.categories.ats} /></article>
-            <article className="pro"><div className="eyebrow">Threadline Pro</div><h3>Turn analysis into finished applications.</h3><p>Tailored resumes, cover letters, interview preparation, and unlimited job comparisons.</p><button className="button primary full" onClick={checkout}>{checkoutLoading ? "Opening checkout..." : "Choose Pro"}</button></article>
+            <article className="pro"><div className="eyebrow">Human-reviewed</div><h3>Get your five highest-impact resume fixes.</h3><p>Send your resume and target job for a focused expert diagnostic delivered within one business day.</p><button className="button primary full" onClick={checkout}>{checkoutLoading ? "Opening secure checkout..." : "Get my $49 diagnostic"}</button></article>
           </aside>
         </div>
       </section>}
 
       <section className="section pricing" id="pricing">
-        <Heading eyebrow="Simple pricing" title="Use what you need during your job search" text="Start free. Upgrade when you are ready to tailor more applications." />
+        <Heading eyebrow="Simple pricing" title="Start free. Get a human second opinion when it matters." text="No subscription. No recurring charge. One focused diagnostic for one target role." />
         <div className="pricing-grid">
           <article><span>Free</span><h3>$0</h3><p>Understand your fit before you apply.</p><ul><li><Check />One recruiter analysis</li><li><Check />Job Fit Score</li><li><Check />Top strengths and gaps</li><li><Check />Prioritized improvements</li></ul><a className="button ghost full" href="#analyze">Start free</a></article>
-          <article className="featured"><Pill tone="accent">Most popular</Pill><span>Pro Job Search</span><h3>$49 <small>/ 30 days</small></h3><p>Everything needed for an active search.</p><ul><li><Check />Unlimited analyses</li><li><Check />Career DNA profile</li><li><Check />Resume tailoring</li><li><Check />Cover letters</li><li><Check />Interview preparation</li></ul><button className="button primary full" onClick={checkout}>{checkoutLoading ? "Opening checkout..." : "Choose Pro"}</button></article>
+          <article className="featured"><Pill tone="accent">Human-reviewed</Pill><span>Same-Day Resume Diagnostic</span><h3>$49 <small>one time</small></h3><p>A focused expert review of your resume for the job you want.</p><ul><li><Check />Human resume review</li><li><Check />Target job comparison</li><li><Check />Five highest-impact fixes</li><li><Check />Positioning recommendations</li><li><Check />Delivered within one business day</li></ul><button className="button primary full" onClick={checkout}>{checkoutLoading ? "Opening secure checkout..." : "Get my diagnostic"}</button></article>
         </div>
       </section>
     </main>
