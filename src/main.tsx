@@ -151,6 +151,7 @@ function App() {
         <a href="#how-it-works" onClick={() => setMobile(false)}>How it works</a>
         <a href="#analyze" onClick={() => setMobile(false)}>Analyze</a>
         <a href="#pricing" onClick={() => setMobile(false)}>Pricing</a>
+        <a href="/human-resume-review/" onClick={() => setMobile(false)}>Human review</a>
         <a className="nav-cta" href="#analyze" onClick={() => setMobile(false)}>Analyze my resume</a>
       </nav>
       <button className="menu" onClick={() => setMobile(!mobile)}>{mobile ? <X /> : <Menu />}</button>
@@ -259,7 +260,7 @@ function App() {
       </section>
     </main>
 
-    <footer><div><Logo /><p>Make your experience make sense.</p></div><div className="footer-links"><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="mailto:support@threadlineresume.com">Support</a></div><small>© {new Date().getFullYear()} Threadline. Scores are guidance, not a guarantee of employment.</small></footer>
+    <footer><div><Logo /><p>Make your experience make sense.</p></div><div className="footer-links"><a href="/human-resume-review/">Human resume review</a><a href="/resume-diagnostic/">Resume diagnostic</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="mailto:support@threadlineresume.com">Support</a></div><small>© {new Date().getFullYear()} Threadline. Scores are guidance, not a guarantee of employment.</small></footer>
   </>;
 }
 
